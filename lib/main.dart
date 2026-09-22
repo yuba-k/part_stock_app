@@ -24,6 +24,12 @@ class MyApp extends StatefulWidget{
 }
 
 class _MyApp extends State<MyApp>{
+  List<Part> part_list = [];
+
+  void rewrite(int id, int quantity){
+    Part part = part_list.firstWhere((t) => t.id == id, orElse: () => throw Exception("$id is unknown-id"));
+    part.quantity = quantity;
+  }
 
   @override
   Widget build(BuildContext context){
