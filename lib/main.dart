@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 void main(){
   runApp(const MyApp());
 }
@@ -29,9 +31,17 @@ class _MyApp extends State<MyApp>{
   @override
   void initState() {
     super.initState();
-    part_list.add(Part(1, "サーボモーター", 3));
-    part_list.add(Part(2, "ネジ(M3x10)", 50));
-    part_list.add(Part(3, "PLAフィラメント", 2));
+    fetchParts();
+  }
+
+  Future<void> fetchParts() async{
+    var response = await http.get(Uri.parse("http://localhost:8000/test_site/get_parts.php"));
+    var data = jsonDecode(response.body);
+    for(int i = 0; i<data.length;i++){
+      part_list.add(Part.fromJson(data[i]));
+    }
+    setState(() {
+    });
   }
 
   void rewrite(int id, int quantity){
