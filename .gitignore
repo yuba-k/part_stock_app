@@ -46,3 +46,4 @@ app.*.map.json
 
 # user appended
 /test_site/get_parts.php
+/test_site/update_quantity.php
