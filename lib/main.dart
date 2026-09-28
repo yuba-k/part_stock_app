@@ -44,6 +44,16 @@ class _MyApp extends State<MyApp>{
     });
   }
 
+  Future<void> updateQuantity(int id, int quantity) async{
+    var response = await http.post(
+        Uri.parse("http://localhost:8000/test_site/update_quantity.php"),
+        headers: {
+          "Content-Type":"application/json",
+        },
+        body: jsonEncode({"id":id, "quantity":quantity})
+      );
+  }
+
   void rewrite(int id, int quantity){
     Part part = part_list.firstWhere((t) => t.id == id, orElse: () => throw Exception("$id is unknown-id"));
     part.quantity = quantity;
@@ -59,7 +69,14 @@ class _MyApp extends State<MyApp>{
           itemBuilder: (BuildContext context, int index){
             return ListTile(
               title:Text(part_list[index].name),
-              subtitle: Text(part_list[index].quantity.toString()),
+              subtitle: Text(part_list[index].quantity.toString()), 
+              trailing: Row(
+                children: [
+                  IconButton(onPressed: () async{await updateQuantity(part_list[index].id, part_list[index].quantity+1); part_list.clear(); await fetchParts();}, icon: Icon(Icons.exposure_plus_1)),
+                  IconButton(onPressed: () async{await updateQuantity(part_list[index].id, part_list[index].quantity-1); part_list.clear(); await fetchParts();}, icon: Icon(Icons.exposure_minus_1)),
+                ],
+                mainAxisSize: MainAxisSize.min,
+              )
             );
           }
         ),
