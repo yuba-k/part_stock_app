@@ -27,6 +27,8 @@ class MyApp extends StatefulWidget{
 
 class _MyApp extends State<MyApp>{
   List<Part> part_list = [];
+  TextEditingController part_name = TextEditingController();
+  TextEditingController part_quantity = TextEditingController();
 
   @override
   void initState() {
@@ -45,7 +47,7 @@ class _MyApp extends State<MyApp>{
     });
   }
 
-  Future<void> updateQuantity(int id, int quantity) async{
+  Future<void> updateQuantity(int id, int quantity) async {
     var response = await http.post(
         Uri.parse("http://localhost:8000/test_site/update_quantity.php"),
         headers: {
@@ -55,42 +57,96 @@ class _MyApp extends State<MyApp>{
       );
   }
 
+  Future<void> insertPart(String name, int quantity) async {
+    var response = await http.post(
+      Uri.parse("http://localhost:8000/test_site/add_part.php"),
+      headers: {
+        "Content-Type":"application/json",
+      },
+      body: jsonEncode({"name":name, "quantity":quantity})
+    );
+  }
+
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext innerContext){
     return MaterialApp(
-      home:Scaffold(
-        appBar: AppBar(title: const Text("Part Stock App",)),
-        body: ListView.builder(
-          itemCount: part_list.length,
-          itemBuilder: (BuildContext context, int index){
-            return ListTile(
-              title:Text(part_list[index].name),
-              subtitle: Text(part_list[index].quantity.toString()), 
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    onPressed: () async{
-                        await updateQuantity(part_list[index].id, 1);
-                        await fetchParts();
+      debugShowCheckedModeBanner: false,
+      home:Builder(
+        builder: (BuildContext innerContext) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text("Part Stock App",),
+              actions: [
+                IconButton(
+                    onPressed: (){
+                      showDialog(
+                          context: innerContext,
+                          builder: (BuildContext innerContext){
+                            return AlertDialog(
+                              title: const Text("部品を追加"),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextField(decoration: InputDecoration(labelText: "部品名"), controller: part_name,),
+                                  TextField(decoration: InputDecoration(labelText: "初期数量"), controller: part_quantity,),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(innerContext);
+                                  },
+                                  child: const Text("キャンセル")
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    await insertPart(part_name.text, int.parse(part_quantity.text));
+                                    await fetchParts();
+                                    Navigator.pop(innerContext);
+                                  }, child: const Text("追加")
+                                ),
+                              ],
+                            );
+                          }
+                        );
                     },
-                    icon: Icon(Icons.exposure_plus_1)
-                  ),
-                  IconButton(
-                    onPressed: () async{
-                      if(part_list[index].quantity == 0){
-                        
-                      }else{
-                        await updateQuantity(part_list[index].id, -1);
-                        await fetchParts();
-                      }
-                    },
-                    icon: Icon(Icons.exposure_minus_1)),
+                    icon: Icon(Icons.add)
+                  )
                 ],
-              )
-            );
-          }
-        ),
+            ),
+            body: ListView.builder(
+              itemCount: part_list.length,
+              itemBuilder: (BuildContext innerContext, int index){
+                return ListTile(
+                  title:Text(part_list[index].name),
+                  subtitle: Text(part_list[index].quantity.toString()), 
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () async{
+                            await updateQuantity(part_list[index].id, 1);
+                            await fetchParts();
+                        },
+                        icon: Icon(Icons.exposure_plus_1)
+                      ),
+                      IconButton(
+                        onPressed: () async{
+                          if(part_list[index].quantity == 0){
+                            
+                          }else{
+                            await updateQuantity(part_list[index].id, -1);
+                            await fetchParts();
+                          }
+                        },
+                        icon: Icon(Icons.exposure_minus_1)),
+                    ],
+                  )
+                );
+              }
+            ),
+          );
+        }
       )
     );
   }
