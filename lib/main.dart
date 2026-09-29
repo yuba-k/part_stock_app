@@ -37,6 +37,7 @@ class _MyApp extends State<MyApp>{
   Future<void> fetchParts() async{
     var response = await http.get(Uri.parse("http://localhost:8000/test_site/get_parts.php"));
     var data = jsonDecode(response.body);
+    part_list.clear();
     for(int i = 0; i<data.length;i++){
       part_list.add(Part.fromJson(data[i]));
     }
@@ -50,13 +51,8 @@ class _MyApp extends State<MyApp>{
         headers: {
           "Content-Type":"application/json",
         },
-        body: jsonEncode({"id":id, "quantity":quantity})
+        body: jsonEncode({"id":id, "delta":quantity})
       );
-  }
-
-  void rewrite(int id, int quantity){
-    Part part = part_list.firstWhere((t) => t.id == id, orElse: () => throw Exception("$id is unknown-id"));
-    part.quantity = quantity;
   }
 
   @override
@@ -71,11 +67,26 @@ class _MyApp extends State<MyApp>{
               title:Text(part_list[index].name),
               subtitle: Text(part_list[index].quantity.toString()), 
               trailing: Row(
-                children: [
-                  IconButton(onPressed: () async{await updateQuantity(part_list[index].id, part_list[index].quantity+1); part_list.clear(); await fetchParts();}, icon: Icon(Icons.exposure_plus_1)),
-                  IconButton(onPressed: () async{await updateQuantity(part_list[index].id, part_list[index].quantity-1); part_list.clear(); await fetchParts();}, icon: Icon(Icons.exposure_minus_1)),
-                ],
                 mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: () async{
+                        await updateQuantity(part_list[index].id, 1);
+                        await fetchParts();
+                    },
+                    icon: Icon(Icons.exposure_plus_1)
+                  ),
+                  IconButton(
+                    onPressed: () async{
+                      if(part_list[index].quantity == 0){
+                        
+                      }else{
+                        await updateQuantity(part_list[index].id, -1);
+                        await fetchParts();
+                      }
+                    },
+                    icon: Icon(Icons.exposure_minus_1)),
+                ],
               )
             );
           }
