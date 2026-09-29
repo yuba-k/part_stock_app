@@ -18,6 +18,10 @@ class Part{
   }
 }
 
+class ApiConfig {
+  static const String baseUrl = "http://localhost:8000/test_site/";
+}
+
 class MyApp extends StatefulWidget{
   const MyApp({super.key});
 
@@ -37,7 +41,7 @@ class _MyApp extends State<MyApp>{
   }
 
   Future<void> fetchParts() async{
-    var response = await http.get(Uri.parse("http://localhost:8000/test_site/get_parts.php"));
+    var response = await http.get(Uri.parse(ApiConfig.baseUrl+"get_parts.php"));
     var data = jsonDecode(response.body);
     part_list.clear();
     for(int i = 0; i<data.length;i++){
@@ -49,7 +53,7 @@ class _MyApp extends State<MyApp>{
 
   Future<void> updateQuantity(int id, int quantity) async {
     var response = await http.post(
-        Uri.parse("http://localhost:8000/test_site/update_quantity.php"),
+        Uri.parse(ApiConfig.baseUrl+"update_quantity.php"),
         headers: {
           "Content-Type":"application/json",
         },
@@ -57,13 +61,23 @@ class _MyApp extends State<MyApp>{
       );
   }
 
-  Future<void> insertPart(String name, int quantity) async {
+  Future<void> addPart(String name, int quantity) async {
     var response = await http.post(
-      Uri.parse("http://localhost:8000/test_site/add_part.php"),
+      Uri.parse(ApiConfig.baseUrl+"add_part.php"),
       headers: {
         "Content-Type":"application/json",
       },
       body: jsonEncode({"name":name, "quantity":quantity})
+    );
+  }
+
+  Future<void> deletePart(int id) async {
+    var response = await http.post(
+      Uri.parse(ApiConfig.baseUrl+"delete_part.php"),
+      headers: {
+        "Content-Type":"application/json",
+      },
+      body: jsonEncode({"id":id})
     );
   }
 
@@ -100,8 +114,10 @@ class _MyApp extends State<MyApp>{
                                 ),
                                 TextButton(
                                   onPressed: () async {
-                                    await insertPart(part_name.text, int.parse(part_quantity.text));
+                                    await addPart(part_name.text, int.parse(part_quantity.text));
                                     await fetchParts();
+                                    part_name.clear();
+                                    part_quantity.clear();
                                     Navigator.pop(innerContext);
                                   }, child: const Text("追加")
                                 ),
@@ -139,7 +155,37 @@ class _MyApp extends State<MyApp>{
                             await fetchParts();
                           }
                         },
-                        icon: Icon(Icons.exposure_minus_1)),
+                        icon: Icon(Icons.exposure_minus_1)
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          showDialog(
+                            context: innerContext,
+                            builder: (BuildContext innerContext){
+                              return AlertDialog(
+                                title: const Text("部品を削除"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () async {
+                                      await deletePart(part_list[index].id);
+                                      await fetchParts();
+                                      Navigator.pop(innerContext);
+                                    },
+                                    child: const Text("はい")
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(innerContext);
+                                    },
+                                    child: const Text("いいえ"),
+                                  )
+                                ],
+                              );
+                            }
+                          );
+                        },
+                        icon: Icon(Icons.delete)
+                      )
                     ],
                   )
                 );
