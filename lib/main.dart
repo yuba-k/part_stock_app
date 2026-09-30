@@ -15,13 +15,17 @@ class Part{
 
   Part(this.id, this.name, this.quantity);
 
-  factory Part.fromJson(Map<String, dynamic>json){
-    return Part(json["id"] as int, json["name"] as String, json["quantity"] as int);
+  factory Part.fromJson(Map<String, dynamic> json) {
+    return Part(
+      int.parse(json["id"].toString()),
+      json["name"] as String,
+      int.parse(json["quantity"].toString()),
+    );
   }
 }
 
 class ApiConfig {
-  static const String baseUrl = "http://localhost:8000/test_site/";
+  static const String baseUrl = "your-server-address";
 }
 
 class MyApp extends StatefulWidget{
