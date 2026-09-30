@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
 void main(){
   runApp(const MyApp());
 }
@@ -33,15 +35,26 @@ class _MyApp extends State<MyApp>{
   List<Part> part_list = [];
   TextEditingController part_name = TextEditingController();
   TextEditingController part_quantity = TextEditingController();
+  String apiKey = "";
 
   @override
   void initState() {
     super.initState();
-    fetchParts();
+    loadApiKey().then((savedKey){
+      setState((){
+        apiKey = savedKey ?? "";
+      });
+      fetchParts();
+    });
   }
 
   Future<void> fetchParts() async{
-    var response = await http.get(Uri.parse(ApiConfig.baseUrl+"get_parts.php"));
+    var response = await http.get(
+        Uri.parse(ApiConfig.baseUrl+"get_parts.php"),
+        headers: {
+          "X-Api-Key": apiKey
+        },
+      );
     var data = jsonDecode(response.body);
     part_list.clear();
     for(int i = 0; i<data.length;i++){
@@ -56,6 +69,7 @@ class _MyApp extends State<MyApp>{
         Uri.parse(ApiConfig.baseUrl+"update_quantity.php"),
         headers: {
           "Content-Type":"application/json",
+          "X-Api-Key":apiKey,
         },
         body: jsonEncode({"id":id, "delta":quantity})
       );
@@ -66,6 +80,7 @@ class _MyApp extends State<MyApp>{
       Uri.parse(ApiConfig.baseUrl+"add_part.php"),
       headers: {
         "Content-Type":"application/json",
+        "X-Api-Key":apiKey,
       },
       body: jsonEncode({"name":name, "quantity":quantity})
     );
@@ -76,9 +91,20 @@ class _MyApp extends State<MyApp>{
       Uri.parse(ApiConfig.baseUrl+"delete_part.php"),
       headers: {
         "Content-Type":"application/json",
+        "X-Api-Key":apiKey,
       },
       body: jsonEncode({"id":id})
     );
+  }
+
+  Future<String?> loadApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('api_key');
+  }
+
+  Future<void> saveApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('api_key', key);
   }
 
   @override
@@ -127,7 +153,41 @@ class _MyApp extends State<MyApp>{
                         );
                     },
                     icon: Icon(Icons.add)
-                  )
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      final controller = TextEditingController(text: apiKey);
+                      showDialog(
+                        context: innerContext,
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text("APIキー設定"),
+                          content: TextField(
+                            controller: controller,
+                            obscureText: true,
+                            decoration: const InputDecoration(labelText: "APIキー"),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: const Text("キャンセル"),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                await saveApiKey(controller.text);
+                                setState(() {
+                                  apiKey = controller.text;
+                                });
+                                Navigator.pop(dialogContext);
+                                fetchParts();
+                              },
+                              child: const Text("保存"),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.settings),
+                  ),
                 ],
             ),
             body: ListView.builder(
