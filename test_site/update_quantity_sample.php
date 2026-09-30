@@ -1,6 +1,12 @@
 <?php
 header('Content-Type: application/json');
-
+$apiKey = 'ここに好きなランダム文字列';
+$headers = array_change_key_case(getallheaders(), CASE_UPPER);
+if (!isset($headers['X-API-KEY']) || $headers['X-API-KEY'] !== $apiKey) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Forbidden']);
+    exit;
+}
 $host = 'localhost';
 $dbname = 'あなたのDB名';
 $user = 'あなたのユーザー名';
