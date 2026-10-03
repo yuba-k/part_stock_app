@@ -199,7 +199,40 @@ class _MyApp extends State<MyApp>{
               itemBuilder: (BuildContext innerContext, int index){
                 return ListTile(
                   title:Text(part_list[index].name),
-                  subtitle: Text(part_list[index].quantity.toString()), 
+                  subtitle: GestureDetector(
+                    onTap: () {
+                      final controller = TextEditingController(
+                        text: part_list[index].quantity.toString(),
+                      );
+                      showDialog(
+                        context: innerContext,
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text("数量を編集"),
+                          content: TextField(
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: const Text("キャンセル"),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                int newValue = int.parse(controller.text);
+                                int delta = newValue - part_list[index].quantity;
+                                await updateQuantity(part_list[index].id, delta);
+                                await fetchParts();
+                                Navigator.pop(dialogContext);
+                              },
+                              child: const Text("保存"),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: Text(part_list[index].quantity.toString()),
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
