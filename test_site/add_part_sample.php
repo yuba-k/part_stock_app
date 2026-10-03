@@ -24,6 +24,12 @@ try {
         "INSERT INTO parts (name, quantity) VALUES (:name, :quantity)"
     );
     $stmt->execute(['name' => $name, 'quantity' => $quantity]);
+    $newId = $pdo->lastInsertId('parts_id_seq');
+
+    $logStmt = $pdo->prepare(
+        "INSERT INTO usage_log (part_id, part_name, delta) VALUES (:part_id, :part_name, :delta)"
+    );
+    $logStmt->execute(['part_id' => $newId, 'part_name' => $name, 'delta' => $quantity]);
 
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
