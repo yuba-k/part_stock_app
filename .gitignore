@@ -49,3 +49,4 @@ app.*.map.json
 /test_site/update_quantity.php
 /test_site/add_part.php
 /test_site/delete_part.php
+/test_site/get_usage_log.php
