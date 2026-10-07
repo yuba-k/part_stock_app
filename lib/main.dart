@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 void main(){
   runApp(const MyApp());
@@ -24,6 +25,26 @@ class Part{
   }
 }
 
+class UsageLog{
+  final int id;
+  final int part_id;
+  final String part_name;
+  final int delta;
+  final DateTime changed_at;
+
+  UsageLog(this.id, this.part_id, this.part_name, this.delta, this.changed_at);
+
+  factory UsageLog.fromJson(Map<String, dynamic> json){
+    return UsageLog(
+        int.parse(json["id"].toString()),
+        int.parse(json["part_id"].toString()),
+        json["part_name"] as String,
+        int.parse(json["delta"].toString()),
+        DateTime.parse(json["changed_at"].toString())
+      );
+  }
+}
+
 class ApiConfig {
   static const String baseUrl = "your-server-address";
 }
@@ -37,6 +58,7 @@ class MyApp extends StatefulWidget{
 
 class _MyApp extends State<MyApp>{
   List<Part> part_list = [];
+  List<UsageLog> usage_log = [];
   TextEditingController part_name = TextEditingController();
   TextEditingController part_quantity = TextEditingController();
   String apiKey = "";
@@ -99,6 +121,22 @@ class _MyApp extends State<MyApp>{
       },
       body: jsonEncode({"id":id})
     );
+  }
+
+  Future<void> fetchUsageLog() async{
+    var response = await http.get(
+        Uri.parse(ApiConfig.baseUrl+"get_usage_log.php"),
+        headers: {
+          "X-Api-Key": apiKey
+        },
+      );
+    var data = jsonDecode(response.body);
+    usage_log.clear();
+    for(int i = 0; i<data.length;i++){
+      usage_log.add(UsageLog.fromJson(data[i]));
+    }
+    setState(() {
+    });
   }
 
   Future<String?> loadApiKey() async {
@@ -292,5 +330,43 @@ class _MyApp extends State<MyApp>{
         }
       )
     );
+  }
+}
+
+class UsageLogPage extends StatelessWidget {
+  final List<UsageLog> usage_log;
+  
+  UsageLogPage({super.key, required this.usage_log});
+
+  List<UsageLog> getSortedLogsForPart(int partId){
+    List<UsageLog> tmp = usage_log.where((t) => t.part_id == partId).toList();
+    tmp.sort((a,b) => a.changed_at.compareTo(b.changed_at));
+    return tmp;
+  }
+
+  List<MapEntry<DateTime, int>> buildCumulativeSeries(int partId) {
+    List<MapEntry<DateTime, int>> result = [];
+    int runningTotal = 0;
+    for(UsageLog t in getSortedLogsForPart(partId)){
+      runningTotal += t.delta;
+      result.add(MapEntry(t.changed_at, runningTotal));
+    }
+    return result;
+  }
+
+  List<FlSpot> buildSpots(int partId) {
+    List<MapEntry<DateTime, int>> series = buildCumulativeSeries(partId);
+    List<FlSpot> spots = [];
+    for (int i = 0; i < series.length; i++) {
+      spots.add(
+        FlSpot(i.toDouble(), series[i].value.toDouble())
+      );
+    }
+    return spots;
+  }
+
+  @override
+  Widget build(BuildContext context){
+    return Scaffold();
   }
 }
