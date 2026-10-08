@@ -46,7 +46,7 @@ class UsageLog{
 }
 
 class ApiConfig {
-  static const String baseUrl = "your-server-address";
+  static const String baseUrl = "https://ss1.xrea.com/physicsnitk.s323.xrea.com/";
 }
 
 class MyApp extends StatefulWidget{
@@ -62,6 +62,7 @@ class _MyApp extends State<MyApp>{
   TextEditingController part_name = TextEditingController();
   TextEditingController part_quantity = TextEditingController();
   String apiKey = "";
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
@@ -75,23 +76,31 @@ class _MyApp extends State<MyApp>{
   }
 
   Future<void> fetchParts() async{
-    var response = await http.get(
+    try{
+      var response = await http.get(
         Uri.parse(ApiConfig.baseUrl+"get_parts.php"),
         headers: {
           "X-Api-Key": apiKey
         },
       );
-    var data = jsonDecode(response.body);
-    part_list.clear();
-    for(int i = 0; i<data.length;i++){
-      part_list.add(Part.fromJson(data[i]));
+      var data = jsonDecode(response.body);
+      part_list.clear();
+      for(int i = 0; i<data.length;i++){
+        part_list.add(Part.fromJson(data[i]));
+      }
+      setState(() {
+      });
+    }catch(e){
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text("通信エラー"))
+      );
+      return;
     }
-    setState(() {
-    });
   }
 
-  Future<void> updateQuantity(int id, int quantity) async {
-    var response = await http.post(
+  Future<bool> updateQuantity(int id, int quantity) async {
+    try{
+      var response = await http.post(
         Uri.parse(ApiConfig.baseUrl+"update_quantity.php"),
         headers: {
           "Content-Type":"application/json",
@@ -99,44 +108,97 @@ class _MyApp extends State<MyApp>{
         },
         body: jsonEncode({"id":id, "delta":quantity})
       );
+      if(response.statusCode != 200){
+        scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text("通信エラー"))
+        );
+        return false;
+      }
+      return true;
+    }catch(e){
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text("通信エラー"))
+      );
+      return false;
+    }
   }
 
-  Future<void> addPart(String name, int quantity) async {
-    var response = await http.post(
-      Uri.parse(ApiConfig.baseUrl+"add_part.php"),
-      headers: {
-        "Content-Type":"application/json",
-        "X-Api-Key":apiKey,
-      },
-      body: jsonEncode({"name":name, "quantity":quantity})
-    );
+  Future<bool> addPart(String name, int quantity) async {
+    try{
+      var response = await http.post(
+        Uri.parse(ApiConfig.baseUrl+"add_part.php"),
+        headers: {
+          "Content-Type":"application/json",
+          "X-Api-Key":apiKey,
+        },
+        body: jsonEncode({"name":name, "quantity":quantity})
+      );
+      if(response.statusCode != 200){
+        scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text("通信エラー"))
+        );
+        return false;
+      }
+      return true;
+    }catch(e){
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text("通信エラー"))
+      );
+      return false;
+    }
   }
 
-  Future<void> deletePart(int id) async {
-    var response = await http.post(
-      Uri.parse(ApiConfig.baseUrl+"delete_part.php"),
-      headers: {
-        "Content-Type":"application/json",
-        "X-Api-Key":apiKey,
-      },
-      body: jsonEncode({"id":id})
-    );
+  Future<bool> deletePart(int id) async {
+    try{
+      var response = await http.post(
+        Uri.parse(ApiConfig.baseUrl+"delete_part.php"),
+        headers: {
+          "Content-Type":"application/json",
+          "X-Api-Key":apiKey,
+        },
+        body: jsonEncode({"id":id})
+      );
+      if(response.statusCode != 200){
+        scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text("通信エラー"))
+        );
+        return false;
+      }
+      return true;
+    }catch(e){
+      scaffoldMessengerKey.currentState?.showSnackBar(
+         SnackBar(content: Text("通信エラー"))
+      );
+      return false;
+    }
   }
 
   Future<void> fetchUsageLog() async{
-    var response = await http.get(
-        Uri.parse(ApiConfig.baseUrl+"get_usage_log.php"),
-        headers: {
-          "X-Api-Key": apiKey
-        },
+    try{
+      var response = await http.get(
+          Uri.parse(ApiConfig.baseUrl+"get_usage_log.php"),
+          headers: {
+            "X-Api-Key": apiKey
+          },
+        );
+      if(response.statusCode != 200){
+        scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text("通信エラー"))
+        );
+        return;
+      }
+      var data = jsonDecode(response.body);
+      usage_log.clear();
+      for(int i = 0; i<data.length;i++){
+        usage_log.add(UsageLog.fromJson(data[i]));
+      }
+      setState(() {
+      });
+    }catch(e){
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text("通信エラー"))
       );
-    var data = jsonDecode(response.body);
-    usage_log.clear();
-    for(int i = 0; i<data.length;i++){
-      usage_log.add(UsageLog.fromJson(data[i]));
     }
-    setState(() {
-    });
   }
 
   Future<String?> loadApiKey() async {
@@ -153,6 +215,7 @@ class _MyApp extends State<MyApp>{
   Widget build(BuildContext innerContext){
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       home:Builder(
         builder: (BuildContext innerContext) {
           return Scaffold(
@@ -182,8 +245,9 @@ class _MyApp extends State<MyApp>{
                                 ),
                                 TextButton(
                                   onPressed: () async {
-                                    await addPart(part_name.text, int.parse(part_quantity.text));
-                                    await fetchParts();
+                                    if(await addPart(part_name.text, int.parse(part_quantity.text))){
+                                      await fetchParts();
+                                    }
                                     part_name.clear();
                                     part_quantity.clear();
                                     Navigator.pop(innerContext);
@@ -274,8 +338,9 @@ class _MyApp extends State<MyApp>{
                               onPressed: () async {
                                 int newValue = int.parse(controller.text);
                                 int delta = newValue - part_list[index].quantity;
-                                await updateQuantity(part_list[index].id, delta);
-                                await fetchParts();
+                                if(await updateQuantity(part_list[index].id, delta)){
+                                  await fetchParts();
+                                }
                                 Navigator.pop(dialogContext);
                               },
                               child: const Text("保存"),
@@ -291,8 +356,9 @@ class _MyApp extends State<MyApp>{
                     children: [
                       IconButton(
                         onPressed: () async{
-                            await updateQuantity(part_list[index].id, 1);
-                            await fetchParts();
+                            if(await updateQuantity(part_list[index].id, 1)){
+                              await fetchParts();
+                            }
                         },
                         icon: Icon(Icons.exposure_plus_1)
                       ),
@@ -301,8 +367,9 @@ class _MyApp extends State<MyApp>{
                           if(part_list[index].quantity == 0){
                             
                           }else{
-                            await updateQuantity(part_list[index].id, -1);
-                            await fetchParts();
+                            if(await updateQuantity(part_list[index].id, -1)){
+                              await fetchParts();
+                            }
                           }
                         },
                         icon: Icon(Icons.exposure_minus_1)
@@ -317,8 +384,9 @@ class _MyApp extends State<MyApp>{
                                 actions: [
                                   TextButton(
                                     onPressed: () async {
-                                      await deletePart(part_list[index].id);
-                                      await fetchParts();
+                                      if(await deletePart(part_list[index].id)){
+                                        await fetchParts();
+                                      }
                                       Navigator.pop(innerContext);
                                     },
                                     child: const Text("はい")
