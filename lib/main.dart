@@ -46,7 +46,7 @@ class UsageLog{
 }
 
 class ApiConfig {
-  static const String baseUrl = "https://ss1.xrea.com/physicsnitk.s323.xrea.com/";
+  static const String baseUrl = "your-server-address";
 }
 
 class MyApp extends StatefulWidget{
