@@ -230,6 +230,21 @@ class _MyApp extends State<MyApp>{
                     },
                     icon: const Icon(Icons.settings),
                   ),
+                  IconButton(
+                    onPressed: () async {
+                      await fetchUsageLog();
+                      Navigator.push(
+                        innerContext,
+                        MaterialPageRoute(
+                          builder:(context) => UsageLogPage(
+                            usage_log: usage_log,
+                            part_list: part_list
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.history),
+                  )
                 ],
             ),
             body: ListView.builder(
@@ -333,13 +348,20 @@ class _MyApp extends State<MyApp>{
   }
 }
 
-class UsageLogPage extends StatelessWidget {
+class UsageLogPage extends StatefulWidget{
+  const UsageLogPage({super.key, required this.usage_log, required this.part_list});
   final List<UsageLog> usage_log;
-  
-  UsageLogPage({super.key, required this.usage_log});
+  final List<Part> part_list;
+
+  @override
+  State<UsageLogPage> createState() => _UsageLogPage();
+}
+
+class _UsageLogPage extends State<UsageLogPage>{
+  int? selectedPartId;
 
   List<UsageLog> getSortedLogsForPart(int partId){
-    List<UsageLog> tmp = usage_log.where((t) => t.part_id == partId).toList();
+    List<UsageLog> tmp = widget.usage_log.where((t) => t.part_id == partId).toList();
     tmp.sort((a,b) => a.changed_at.compareTo(b.changed_at));
     return tmp;
   }
@@ -365,8 +387,94 @@ class UsageLogPage extends StatelessWidget {
     return spots;
   }
 
+  ConsumptionSummary calculateSummary(int partId) {
+    int totalConsumption = 0;
+    int totalSupply = 0;
+    for (UsageLog t in getSortedLogsForPart(partId)) {
+      if(t.delta > 0){
+        totalSupply += t.delta;
+      } else if (t.delta < 0) {
+        totalConsumption += -t.delta;
+      }
+    }
+    return ConsumptionSummary(totalConsumption, totalSupply);
+  }
+
   @override
   Widget build(BuildContext context){
-    return Scaffold();
+    return Scaffold(
+      appBar: AppBar(title:const Text("使用履歴")),
+      body : Column(
+        children:[
+          DropdownButton<int>(
+            value: selectedPartId,
+            hint: const Text("部品を選択"),
+            items: widget.part_list.map((part) {
+              return DropdownMenuItem<int>(
+                value: part.id,
+                child: Text(part.name),
+              );
+            }).toList(),
+            onChanged: (newValue) {
+              setState(() {
+                selectedPartId = newValue;
+              });
+            },
+          ),
+          if (selectedPartId != null) Builder(
+            builder: (context) {
+              final series = calculateSummary(selectedPartId!);
+              final cumulativeSeries = buildCumulativeSeries(selectedPartId!);
+              final spots = <FlSpot> [
+                for(int i = 0; i < cumulativeSeries.length; i++)
+                  FlSpot(i.toDouble(), cumulativeSeries[i].value.toDouble())
+              ];
+              return Column(
+                children: [
+                  Text("総消費：${series.totalConsumption}/総供給：${series.totalSupply}"),
+                  SizedBox(
+                    height:300,
+                    child:LineChart(
+                      LineChartData(
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: spots,
+                            isCurved: true,
+                            color: Colors.blue,
+                            dotData: FlDotData(show: false),
+                          ),
+                        ],
+                        titlesData: FlTitlesData(
+                          bottomTitles: AxisTitles(
+                            sideTitles:SideTitles(
+                              showTitles: true,
+                              getTitlesWidget:(value, meta){
+                                int index = value.toInt();
+                                if(index < 0 || index >= cumulativeSeries.length){
+                                  return const Text("");
+                                }
+                                DateTime date = cumulativeSeries[index].key;
+                                return Text("${date.month}/${date.day}");
+                              }
+                            )
+                          )
+                        )
+                      ),
+                    ),
+                  ),
+                ]
+              );
+            },
+          )
+        ]
+      )      
+    );
   }
+}
+
+class ConsumptionSummary {
+  final int totalConsumption;
+  final int totalSupply;
+
+  ConsumptionSummary(this.totalConsumption, this.totalSupply);
 }
