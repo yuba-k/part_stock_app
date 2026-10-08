@@ -63,6 +63,7 @@ class _MyApp extends State<MyApp>{
   TextEditingController part_quantity = TextEditingController();
   String apiKey = "";
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -76,6 +77,9 @@ class _MyApp extends State<MyApp>{
   }
 
   Future<void> fetchParts() async{
+    setState(() {
+      isLoading = true;
+    });
     try{
       var response = await http.get(
         Uri.parse(ApiConfig.baseUrl+"get_parts.php"),
@@ -95,10 +99,17 @@ class _MyApp extends State<MyApp>{
         SnackBar(content: Text("通信エラー"))
       );
       return;
+    }finally{
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
   Future<bool> updateQuantity(int id, int quantity) async {
+    setState(() {
+      isLoading = true;
+    });
     try{
       var response = await http.post(
         Uri.parse(ApiConfig.baseUrl+"update_quantity.php"),
@@ -120,10 +131,17 @@ class _MyApp extends State<MyApp>{
         SnackBar(content: Text("通信エラー"))
       );
       return false;
+    }finally{
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
   Future<bool> addPart(String name, int quantity) async {
+    setState(() {
+      isLoading = true;
+    });
     try{
       var response = await http.post(
         Uri.parse(ApiConfig.baseUrl+"add_part.php"),
@@ -145,10 +163,17 @@ class _MyApp extends State<MyApp>{
         SnackBar(content: Text("通信エラー"))
       );
       return false;
+    }finally{
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
   Future<bool> deletePart(int id) async {
+    setState(() {
+      isLoading = true;
+    });
     try{
       var response = await http.post(
         Uri.parse(ApiConfig.baseUrl+"delete_part.php"),
@@ -170,10 +195,17 @@ class _MyApp extends State<MyApp>{
          SnackBar(content: Text("通信エラー"))
       );
       return false;
+    }finally{
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
   Future<void> fetchUsageLog() async{
+    setState(() {
+      isLoading = true;
+    });
     try{
       var response = await http.get(
           Uri.parse(ApiConfig.baseUrl+"get_usage_log.php"),
@@ -198,6 +230,10 @@ class _MyApp extends State<MyApp>{
       scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text("通信エラー"))
       );
+    }finally{
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -311,7 +347,9 @@ class _MyApp extends State<MyApp>{
                   )
                 ],
             ),
-            body: ListView.builder(
+            body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
               itemCount: part_list.length,
               itemBuilder: (BuildContext innerContext, int index){
                 return ListTile(
