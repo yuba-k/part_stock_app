@@ -347,106 +347,109 @@ class _MyApp extends State<MyApp>{
                   )
                 ],
             ),
-            body: isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-              itemCount: part_list.length,
-              itemBuilder: (BuildContext innerContext, int index){
-                return ListTile(
-                  title:Text(part_list[index].name),
-                  subtitle: GestureDetector(
-                    onTap: () {
-                      final controller = TextEditingController(
-                        text: part_list[index].quantity.toString(),
-                      );
-                      showDialog(
-                        context: innerContext,
-                        builder: (dialogContext) => AlertDialog(
-                          title: const Text("数量を編集"),
-                          content: TextField(
-                            controller: controller,
-                            keyboardType: TextInputType.number,
+            body: Padding(
+              padding: const EdgeInsets.only(bottom: 60),
+              child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                itemCount: part_list.length,
+                itemBuilder: (BuildContext innerContext, int index){
+                  return ListTile(
+                    title:Text(part_list[index].name),
+                    subtitle: GestureDetector(
+                      onTap: () {
+                        final controller = TextEditingController(
+                          text: part_list[index].quantity.toString(),
+                        );
+                        showDialog(
+                          context: innerContext,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text("数量を編集"),
+                            content: TextField(
+                              controller: controller,
+                              keyboardType: TextInputType.number,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: const Text("キャンセル"),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  int newValue = int.parse(controller.text);
+                                  int delta = newValue - part_list[index].quantity;
+                                  if(await updateQuantity(part_list[index].id, delta)){
+                                    await fetchParts();
+                                  }
+                                  Navigator.pop(dialogContext);
+                                },
+                                child: const Text("保存"),
+                              ),
+                            ],
                           ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(dialogContext),
-                              child: const Text("キャンセル"),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                int newValue = int.parse(controller.text);
-                                int delta = newValue - part_list[index].quantity;
-                                if(await updateQuantity(part_list[index].id, delta)){
-                                  await fetchParts();
-                                }
-                                Navigator.pop(dialogContext);
-                              },
-                              child: const Text("保存"),
-                            ),
-                          ],
+                        );
+                      },
+                      child: Text(part_list[index].quantity.toString()),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: () async{
+                              if(await updateQuantity(part_list[index].id, 1)){
+                                await fetchParts();
+                              }
+                          },
+                          icon: Icon(Icons.exposure_plus_1)
                         ),
-                      );
-                    },
-                    child: Text(part_list[index].quantity.toString()),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        onPressed: () async{
-                            if(await updateQuantity(part_list[index].id, 1)){
-                              await fetchParts();
+                        IconButton(
+                          onPressed: () async{
+                            if(part_list[index].quantity == 0){
+                              
+                            }else{
+                              if(await updateQuantity(part_list[index].id, -1)){
+                                await fetchParts();
+                              }
                             }
-                        },
-                        icon: Icon(Icons.exposure_plus_1)
-                      ),
-                      IconButton(
-                        onPressed: () async{
-                          if(part_list[index].quantity == 0){
-                            
-                          }else{
-                            if(await updateQuantity(part_list[index].id, -1)){
-                              await fetchParts();
-                            }
-                          }
-                        },
-                        icon: Icon(Icons.exposure_minus_1)
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          showDialog(
-                            context: innerContext,
-                            builder: (BuildContext innerContext){
-                              return AlertDialog(
-                                title: const Text("部品を削除"),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () async {
-                                      if(await deletePart(part_list[index].id)){
-                                        await fetchParts();
-                                      }
-                                      Navigator.pop(innerContext);
-                                    },
-                                    child: const Text("はい")
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(innerContext);
-                                    },
-                                    child: const Text("いいえ"),
-                                  )
-                                ],
-                              );
-                            }
-                          );
-                        },
-                        icon: Icon(Icons.delete)
-                      )
-                    ],
-                  )
-                );
-              }
-            ),
+                          },
+                          icon: Icon(Icons.exposure_minus_1)
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            showDialog(
+                              context: innerContext,
+                              builder: (BuildContext innerContext){
+                                return AlertDialog(
+                                  title: const Text("部品を削除"),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () async {
+                                        if(await deletePart(part_list[index].id)){
+                                          await fetchParts();
+                                        }
+                                        Navigator.pop(innerContext);
+                                      },
+                                      child: const Text("はい")
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(innerContext);
+                                      },
+                                      child: const Text("いいえ"),
+                                    )
+                                  ],
+                                );
+                              }
+                            );
+                          },
+                          icon: Icon(Icons.delete)
+                        )
+                      ],
+                    )
+                  );
+                }
+              ),
+            )
           );
         }
       )
