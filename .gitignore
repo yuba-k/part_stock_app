@@ -50,3 +50,5 @@ app.*.map.json
 /test_site/add_part.php
 /test_site/delete_part.php
 /test_site/get_usage_log.php
+
+command.bash
